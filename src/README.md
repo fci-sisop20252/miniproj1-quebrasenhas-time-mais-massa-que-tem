@@ -55,7 +55,7 @@ O worker pode ser testado individualmente:
 
 Parâmetros:
 - Hash MD5 alvo
-- Senha inicial do intervalo  
+- Senha inicial do intervalo
 - Senha final do intervalo
 - Charset
 - Tamanho da senha

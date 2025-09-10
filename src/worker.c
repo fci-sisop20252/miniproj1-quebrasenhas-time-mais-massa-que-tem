@@ -45,7 +45,29 @@ int increment_password(char *password, const char *charset, int charset_len, int
     // - Se não estourou: atualizar caractere e retornar 1
     // - Se estourou: definir como primeiro caractere e continuar loop
     // - Se todos estouraram: retornar 0 (fim do espaço)
-    
+
+    for(int i = password_len-1; i >= 0;i--){
+
+        int index = -1;
+        for(int j = 0; j < charset_len; j++){
+            if(charset[j] == password[i]){
+                index = j;
+                break;
+            }
+        }
+
+        if(index == -1){
+            printf("Erro! Caracter não esta no charset\n");
+            return 0;
+        }
+        if(index < charset_len-1){
+            password[i] = charset[index+1];
+            return 1;
+        }
+        else password[i] = charset[0];
+
+    }
+
     return 0;  // SUBSTITUA por sua implementação
 }
 
@@ -80,6 +102,17 @@ void save_result(int worker_id, const char *password) {
     // - Tentar abrir arquivo com O_CREAT | O_EXCL | O_WRONLY
     // - Se sucesso: escrever resultado e fechar
     // - Se falhou: outro worker já encontrou
+    int fd = open(RESULT_FILE, O_CREAT | O_EXCL | O_WRONLY, 0644);
+    if(fd >= 0){
+        char buffer[256];
+        int len = snprintf(buffer, sizeof(buffer), "%d:%s\n", worker_id, password);
+        write(fd, buffer, len);
+        close(fd);
+        printf("[Worker %d] Resultado salvo!\n", worker_id);
+    }
+    else{
+        printf("Erro ao criar o arquivo %s", RESULT_FILE);
+    }
 }
 
 /**
@@ -119,27 +152,49 @@ int main(int argc, char *argv[]) {
     while (1) {
         // TODO 3: Verificar periodicamente se outro worker já encontrou a senha
         // DICA: A cada PROGRESS_INTERVAL senhas, verificar se arquivo resultado existe
-        
+        if(passwords_checked%PROGRESS_INTERVAL == 0) {
+            if(check_result_exists()){
+                printf("Encontrado o resultado! Parando worker %d ...\n",worker_id);
+                break;
+            }
+        }
+
+        passwords_checked++;
+
         // TODO 4: Calcular o hash MD5 da senha atual
         // IMPORTANTE: Use a biblioteca MD5 FORNECIDA - md5_string(senha, hash_buffer)
-        
+        md5_string(current_password, computed_hash);
+
+
         // TODO 5: Comparar com o hash alvo
-        // Se encontrou: salvar resultado e terminar
-        
+        //printf("senha a ser TESTADA:%s --- ", current_password);
+        //printf("%s\n", computed_hash);
+
+        if(strcmp(computed_hash, target_hash)==0){
+            printf("Worker %d encontrou a senha: %s !\n", worker_id, current_password);
+            save_result(worker_id, current_password);
+            break;
+        }
+
+
         // TODO 6: Incrementar para a próxima senha
         // DICA: Use a função increment_password implementada acima
-        
+        if(!increment_password(current_password, charset, charset_len, password_len)) break;
+
         // TODO: Verificar se chegou ao fim do intervalo
         // Se sim: terminar loop
-        
-        passwords_checked++;
+        if(strcmp(current_password, end_password) > 0){
+            printf("Fim do intervalo do worker %d\n", worker_id);
+            break;
+        }
+
     }
     
     // Estatísticas finais
     time_t end_time = time(NULL);
     double total_time = difftime(end_time, start_time);
     
-    printf("[Worker %d] Finalizado. Total: %lld senhas em %.2f segundos", 
+    printf("[Worker %d] Finalizado. Total: %lld senhas em %.2f segundos",
            worker_id, passwords_checked, total_time);
     if (total_time > 0) {
         printf(" (%.0f senhas/s)", passwords_checked / total_time);

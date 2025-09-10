@@ -264,6 +264,7 @@ make worker
 ```
 
 ## FASE 4: Completando o Worker
+
 ### 4.1 Implemente a verificação de hash (TODOs 4 e 5)
 No loop principal do worker:
 ```c
@@ -476,4 +477,4 @@ Ao completar este mini-projeto, você terá dominado:
 - ✅ **Comunicação entre processos** via arquivos
 - ✅ **Sincronização** e coordenação de múltiplos workers
 
-**Foco**: O MD5 é apenas o contexto - o importante é aprender paralelização!
+        **Foco**: O MD5 é apenas o contexto - o importante é aprender paralelização!
